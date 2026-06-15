@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>07 · Choose Reading</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1A0A2E;--bg2:#24114D;--pr:#7B3FF2;
+  --ac:#C9A96E;
+  --t1:rgba(237,231,255,.94);--t2:rgba(237,231,255,.78);--t3:rgba(237,231,255,.52);
+  --bd:rgba(201,169,110,.30);--bds:rgba(201,169,110,.62);
+  --gr:rgba(126,6,252,.18);
+  --bb:rgba(123,63,242,.18);--bo:rgba(123,63,242,.50);
+  --ub:rgba(201,169,110,.15);--uo:rgba(201,169,110,.36);
+}
+html,body{height:100dvh;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;margin:0;overflow:hidden;color:var(--t1)}
+.app{width:100%;height:100dvh;background:var(--bg);position:relative;overflow:hidden}
+
+/* Ambient */
+.amb{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.pt{position:absolute;border-radius:50%;background:var(--pr);animation:fup linear infinite}
+@keyframes fup{0%{opacity:0}10%{opacity:.55}90%{opacity:.12}100%{transform:translateY(-180px);opacity:0}}
+.vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,transparent 30%,rgba(0,0,0,.65)100%);pointer-events:none;z-index:1}
+
+/* Screen transitions — only two screens: launch and flow */
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;z-index:5}
+#s-launch{transition:opacity .5s ease,transform .5s ease}
+#s-launch.off{opacity:0;pointer-events:none;transform:scale(.96)}
+#s-flow{opacity:0;pointer-events:none;transition:opacity .5s ease}
+#s-flow.on{opacity:1;pointer-events:auto}
+#s-experts{opacity:0;pointer-events:none;transition:opacity .4s ease}
+#s-experts.on{opacity:1;pointer-events:auto}
+
+/* Nav */
+.nav{height:52px;flex-shrink:0;display:flex;align-items:center;padding:0 20px;position:relative;z-index:10;padding-top:env(safe-area-inset-top,0)}
+.nav-back{width:36px;height:36px;border-radius:50%;border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.nav-back svg{width:15px;height:15px;stroke:var(--ac);fill:none;stroke-width:2}
+.nav-ttl{flex:1;text-align:center;font-family:'Fraunces',serif;font-size:15px;font-weight:400;letter-spacing:.14em;color:var(--t2);text-transform:uppercase;margin-right:36px}
+.nav-ph{width:36px;flex-shrink:0}
+
+/* Chat scroll */
+.chat{position:relative;z-index:10;flex:1;overflow-y:auto;padding:10px 20px;padding-bottom:max(120px,env(safe-area-inset-bottom,120px));display:flex;flex-direction:column;scrollbar-width:none}
+.chat::-webkit-scrollbar{display:none}
+
+/* Primary button */
+.btn-p{width:100%;padding:16px;background:var(--bb);border:1px solid var(--bo);border-radius:50px;color:var(--t1);font-family:'Hanken Grotesk',sans-serif;font-size:15px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:54px;margin-bottom:10px;transition:background .2s}
+.btn-p:active{background:rgba(123,63,242,.32)}
+
+/* Joy bubble */
+.jb{max-width:90%;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.jb.vis{opacity:1;transform:translateY(0)}
+.jb-tag{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.jb-body{font-family:'Fraunces',serif;font-style:italic;font-size:15px;font-weight:400;color:var(--t2);line-height:1.65;background:rgba(255,255,255,.04);border:1px solid rgba(237,231,255,.1);border-radius:12px 12px 12px 3px;padding:13px 15px}
+.jb-body em{font-style:normal;color:var(--ac)}
+
+/* Typing */
+.typing{margin-bottom:14px;opacity:0;transition:opacity .3s}.typing.vis{opacity:1}
+.tdots{display:flex;gap:5px;padding:11px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(237,231,255,.1);border-radius:12px 12px 12px 3px;width:fit-content}
+.tdot{width:5px;height:5px;border-radius:50%;background:rgba(201,169,110,.55);animation:tb 1.2s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
+@keyframes tb{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* User pill */
+.upill{display:flex;justify-content:flex-end;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s}
+.upill.vis{opacity:1;transform:translateY(0)}
+.up-in{background:var(--ub);border:1px solid var(--uo);border-radius:20px 20px 4px 20px;padding:9px 14px;max-width:76%;font-family:'Fraunces',serif;font-size:13.5px;color:var(--t1);line-height:1.5}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.chips.vis{opacity:1;transform:translateY(0)}
+.chip{padding:11px 18px;border-radius:50px;font-family:'Hanken Grotesk',sans-serif;font-size:14px;cursor:pointer;transition:all .2s;min-height:44px;display:flex;align-items:center;white-space:nowrap}
+.chip.pri{background:var(--bb);border:1px solid var(--bo);color:var(--t1);font-weight:500}
+.chip.pri:active{background:rgba(123,63,242,.32)}
+.chip.skip{background:transparent;border:1px solid rgba(237,231,255,.12);color:var(--t3);font-size:13px}
+.chip.skip:active{border-color:rgba(237,231,255,.3);color:var(--t2)}
+
+/* iOS drum picker */
+.picker{background:rgba(36,17,77,.7);border:1px solid rgba(123,63,242,.3);border-radius:18px;overflow:hidden;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.picker.vis{opacity:1;transform:translateY(0)}
+.picker-lbl{font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);padding:12px 16px 0;display:flex;align-items:center;gap:6px}
+.drums{display:flex;margin-top:10px;border-top:1px solid rgba(237,231,255,.07);position:relative}
+.drums::before{content:'';position:absolute;top:50%;left:0;right:0;height:44px;transform:translateY(-50%);background:rgba(201,169,110,.06);border-top:1px solid rgba(201,169,110,.18);border-bottom:1px solid rgba(201,169,110,.18);pointer-events:none;z-index:1}
+.drum-col{flex:1;height:132px;overflow:hidden;cursor:pointer;position:relative}
+.drum-col::before{content:'';position:absolute;top:0;left:0;right:0;height:42px;background:linear-gradient(to bottom,rgba(36,17,77,.92),transparent);z-index:2;pointer-events:none}
+.drum-col::after{content:'';position:absolute;bottom:0;left:0;right:0;height:42px;background:linear-gradient(to top,rgba(36,17,77,.92),transparent);z-index:2;pointer-events:none}
+.drum-inner{display:flex;flex-direction:column;align-items:center}
+.drum-item{height:44px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:20px;font-weight:500;color:rgba(237,231,255,.38);width:100%}
+.drum-item.sel{color:var(--t1);font-size:22px;font-weight:600}
+.drum-div{width:1px;background:rgba(237,231,255,.07);align-self:stretch;z-index:3}
+.drum-lbl-row{display:flex;border-top:1px solid rgba(237,231,255,.06);background:rgba(255,255,255,.02)}
+.drum-lbl{flex:1;font-size:9px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);text-align:center;padding:5px 0 8px}
+
+/* Input block */
+.block{background:rgba(36,17,77,.7);border:1px solid rgba(123,63,242,.3);border-radius:16px;margin-bottom:12px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.block.vis{opacity:1;transform:translateY(0)}
+.block.city-focus{border-color:rgba(201,169,110,.55);background:rgba(201,169,110,.04)}
+.block-lbl{font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);padding:12px 16px 10px;display:flex;align-items:center;gap:6px}
+.time-inner{display:flex;align-items:center;gap:10px;padding:0 16px 14px}
+.t-in{width:68px;padding:11px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(237,231,255,.12);border-radius:12px;color:var(--t1);font-family:'Hanken Grotesk',sans-serif;font-size:17px;text-align:center;outline:none;min-height:50px}
+.t-in::placeholder{color:var(--t3)}.t-in:focus{border-color:rgba(201,169,110,.45)}
+.t-sep{font-size:22px;color:var(--t3)}.t-note{flex:1;font-size:11.5px;color:var(--t3);line-height:1.5;padding-left:6px}
+
+/* City */
+.loc-in{width:100%;padding:12px 16px;background:rgba(255,255,255,.04);border:none;border-top:1px solid rgba(237,231,255,.07);color:var(--t1);font-family:'Hanken Grotesk',sans-serif;font-size:16px;outline:none;min-height:50px}
+.loc-in::placeholder{color:var(--t3)}.loc-in:focus{background:rgba(123,63,242,.08)}
+.loc-sugs{display:flex;flex-direction:column;gap:5px;max-height:0;overflow:hidden;opacity:0;transition:max-height .3s ease,opacity .3s ease,padding .3s ease}
+.loc-sugs.show{max-height:220px;overflow-y:auto;opacity:1;padding:4px 12px 10px}
+.loc-s{padding:11px 14px;font-size:14.5px;color:var(--t2);cursor:pointer;border:1px solid rgba(123,63,242,.22);border-radius:10px;background:rgba(255,255,255,.04);display:flex;flex-direction:column;transition:all .2s;min-height:46px}
+.loc-s:active{border-color:var(--bds);background:rgba(154,123,255,.18);color:var(--t1)}
+.loc-sm{font-weight:500;color:var(--t1)}.loc-sub{font-size:11.5px;color:var(--t3);margin-top:2px}
+
+/* Skip note + profile note */
+.skip-note{font-size:11.5px;color:var(--t3);text-align:center;line-height:1.6;margin-bottom:12px;opacity:0;transition:opacity .4s}.skip-note.vis{opacity:1}
+.skip-note span{color:rgba(201,169,110,.6)}
+.profile-note{font-size:11.5px;font-weight:300;color:var(--t3);text-align:center;line-height:1.6;padding:6px 4px;margin-bottom:8px;opacity:0;transition:opacity .5s}
+.profile-note.vis{opacity:1}
+
+/* Auth rows */
+.auth-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.auth-opts.vis{opacity:1;transform:translateY(0)}
+.auth-row{display:flex;align-items:center;gap:16px;padding:17px 18px;background:rgba(255,255,255,.04);border:1.5px solid rgba(237,231,255,.1);border-radius:16px;cursor:pointer;transition:all .2s;min-height:70px}
+.auth-row:active{border-color:rgba(201,169,110,.45);background:rgba(201,169,110,.05)}
+.auth-ico{width:46px;height:46px;border-radius:13px;background:var(--bb);border:1px solid var(--bo);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.auth-nm{font-family:'Hanken Grotesk',sans-serif;font-size:16px;font-weight:500;color:var(--t1);margin-bottom:3px}
+.auth-sub{font-size:12.5px;font-weight:300;color:var(--t3)}
+.auth-arr{font-size:20px;color:var(--t3);margin-left:auto;flex-shrink:0}
+.auth-row.ghost{background:transparent;border-color:rgba(237,231,255,.07)}
+.auth-row.ghost .auth-nm{color:var(--t3);font-size:14.5px;font-weight:400}
+
+/* Phone / email */
+.ph-lbl{font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);padding:12px 16px 10px;display:flex;align-items:center;gap:6px}
+.ph-row{display:flex;align-items:center;gap:10px;padding:0 16px 0}
+.cc{padding:10px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(237,231,255,.12);border-radius:12px;font-size:15px;color:var(--t2);min-height:50px;display:flex;align-items:center;cursor:pointer;flex-shrink:0}
+.ph-in,.em-in{flex:1;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(237,231,255,.12);border-radius:12px;color:var(--t1);font-family:'Hanken Grotesk',sans-serif;font-size:16px;outline:none;min-height:50px;width:100%}
+.ph-in::placeholder,.em-in::placeholder{color:var(--t3)}.ph-in:focus,.em-in:focus{border-color:rgba(201,169,110,.45)}
+.ph-change{font-size:12px;color:rgba(154,123,255,.7);text-align:right;padding:6px 16px 10px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;display:none}
+
+/* OTP */
+.otp-wrap{display:flex;flex-direction:column;gap:14px;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.otp-wrap.vis{opacity:1;transform:translateY(0)}
+.otp-boxes{display:flex;gap:9px}
+.ob{width:48px;height:60px;background:rgba(36,17,77,.7);border:1.5px solid rgba(237,231,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--t1);transition:border-color .2s;cursor:text;flex-shrink:0}
+.ob.act{border-color:var(--ac);background:rgba(201,169,110,.07)}.ob.fil{border-color:rgba(123,63,242,.5)}
+.otp-resend{font-size:13px;color:var(--t3)}
+.otp-resend span{color:rgba(201,169,110,.7);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+
+/* Choice cards — inline in chat */
+.choice-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.choice-cards.vis{opacity:1;transform:translateY(0)}
+.ccard{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;cursor:pointer;min-height:76px;transition:all .2s}
+.ccard:active{transform:scale(.98)}
+.ccard.daily{background:rgba(36,17,77,.8);border:1px solid rgba(201,169,110,.35)}
+.ccard.daily:active{border-color:rgba(201,169,110,.65)}
+.ccard.full{background:rgba(123,63,242,.13);border:1px solid rgba(126,6,252,.26)}
+.ccard.full:active{border-color:var(--pr)}
+.ccard.expert{background:rgba(255,255,255,.03);border:1px solid rgba(237,231,255,.1)}
+.ccard.expert:active{border-color:rgba(237,231,255,.3)}
+.ccard-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ccard.daily .ccard-ico{background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.3)}
+.ccard.full .ccard-ico{background:rgba(123,63,242,.2);border:1px solid rgba(123,63,242,.4)}
+.ccard.expert .ccard-ico{background:rgba(255,255,255,.06);border:1px solid rgba(237,231,255,.12)}
+.ccard-nm{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--t1);margin-bottom:3px}
+.ccard-desc{font-size:12.5px;font-weight:300;color:var(--t2);line-height:1.5}
+.ccard-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:500;margin-top:4px}
+.ccard.daily .ccard-badge{background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.28);color:rgba(201,169,110,.9)}
+.ccard.full .ccard-badge{background:rgba(123,63,242,.15);border:1px solid rgba(123,63,242,.35);color:#c9b3ff}
+
+/* Launch */
+#s-launch{justify-content:flex-end;padding-bottom:env(safe-area-inset-bottom,0)}
+.lbg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 35%,rgba(126,6,252,.22),rgba(201,169,110,.06)50%,transparent 75%);z-index:0}
+.lcw{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;height:56%;display:flex;align-items:center;justify-content:center;z-index:3}
+.lcard{width:160px;height:254px;border-radius:16px;background:linear-gradient(155deg,var(--bg2),rgba(20,8,40,1));border:1px solid var(--bds);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(126,6,252,.22),0 30px 80px rgba(0,0,0,.7);position:relative;animation:lf 4s ease-in-out infinite}
+@keyframes lf{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-12px) rotate(1deg)}}
+.lcard::before{content:'';position:absolute;inset:10px;border-radius:9px;border:1px solid rgba(201,169,110,.18)}
+.lgr{position:absolute;border-radius:50%;border:1px solid rgba(201,169,110,.1);animation:lr 4s ease-in-out infinite}
+@keyframes lr{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.lbot{position:relative;z-index:10;background:linear-gradient(to top,var(--bg) 75%,transparent);padding:20px 24px;padding-bottom:max(32px,env(safe-area-inset-bottom,32px));text-align:center}
+.ltitle{font-family:'Fraunces',serif;font-size:28px;font-weight:600;color:var(--t1);line-height:1.25;margin-bottom:10px}
+.ltitle em{font-style:italic;color:var(--ac)}
+.lsub{font-size:14.5px;font-weight:300;color:var(--t2);line-height:1.7;margin-bottom:18px}
+.ltrust{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:20px}
+.tpill{font-size:10px;color:rgba(201,169,110,.75);background:rgba(201,169,110,.09);border:1px solid rgba(201,169,110,.2);border-radius:20px;padding:2px 9px;letter-spacing:.06em}
+.ttxt{font-size:11px;color:var(--t3);font-weight:300}
+
+/* Experts */
+.experts-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center}
+
+/* Inline modality picker */
+.modality-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;opacity:0;transform:translateY(8px);transition:opacity .5s,transform .5s}
+.modality-cards.vis{opacity:1;transform:translateY(0)}
+.mcard{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;cursor:pointer;min-height:76px;transition:all .2s}
+.mcard:active{transform:scale(.98)}
+.mcard.tarot{background:rgba(36,17,77,.8);border:1px solid rgba(201,169,110,.35)}
+.mcard.tarot:active{border-color:rgba(201,169,110,.65)}
+.mcard.astro{background:rgba(11,26,62,.85);border:1px solid rgba(79,195,247,.3)}
+.mcard.astro:active{border-color:rgba(79,195,247,.55)}
+.mcard-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.mcard.tarot .mcard-ico{background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.28)}
+.mcard.astro .mcard-ico{background:rgba(79,195,247,.10);border:1px solid rgba(79,195,247,.22)}
+.mcard-nm{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--t1);margin-bottom:3px}
+.mcard-desc{font-size:12.5px;font-weight:300;color:var(--t2);line-height:1.5}
+</style>
+
+<style>
+html, body { width:390px!important; max-width:390px!important; overflow-x:hidden; }
+.app { width:390px!important; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="amb" id="amb"></div>
+  <div class="vig"></div>
+
+  <!-- LAUNCH -->
+  <div class="scr" id="s-launch">
+    <div class="lbg"></div>
+    <div class="lcw">
+      <div class="lgr" style="width:220px;height:220px"></div>
+      <div class="lgr" style="width:290px;height:290px;animation-delay:.8s;border-color:rgba(201,169,110,.06)"></div>
+      <div class="lcard">
+        <svg width="88" height="88" viewBox="0 0 80 80" fill="none" style="color:var(--ac);opacity:.82;margin-bottom:10px">
+          <circle cx="40" cy="40" r="30" stroke="currentColor" stroke-width=".8" opacity=".35"/>
+          <circle cx="40" cy="40" r="18" stroke="currentColor" stroke-width=".6" opacity=".55"/>
+          <path d="M40 16 L43 34 L40 32 L37 34 Z" fill="currentColor" opacity=".75"/>
+          <path d="M40 64 L43 46 L40 48 L37 46 Z" fill="currentColor" opacity=".75"/>
+          <path d="M16 40 L34 43 L32 40 L34 37 Z" fill="currentColor" opacity=".75"/>
+          <path d="M64 40 L46 43 L48 40 L46 37 Z" fill="currentColor" opacity=".75"/>
+          <circle cx="40" cy="40" r="4" fill="currentColor" opacity=".85"/>
+          <circle cx="40" cy="40" r="2" fill="currentColor"/>
+        </svg>
+        <div style="font-family:'Hanken Grotesk',sans-serif;font-size:9.5px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:var(--ac)">Your card awaits</div>
+      </div>
+    </div>
+    <div class="lbot">
+      <div class="ltitle">A reading<br>made for <em>you</em></div>
+      <div class="lsub">Joy draws your card from 3 million minutes of real conversations &#8212; not a random shuffle.</div>
+      <div class="ltrust"><div class="tpill">Free</div><div class="tpill">Private</div><div class="ttxt">300+ vetted readers</div></div>
+      <div class="btn-p" onclick="startReading()">Begin my reading</div>
+    </div>
+  </div>
+
+  <!-- FLOW — single chat screen, never hides -->
+  <div class="scr" id="s-flow">
+    <div class="nav">
+      <div class="nav-back" id="nav-back" onclick="showLaunch()" style="display:none"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="nav-ttl">Joy</div>
+      <div class="nav-ph"></div>
+    </div>
+    <div class="chat" id="chat"></div>
+  </div>
+
+  <!-- EXPERTS — shown for not right now -->
+  <div class="scr" id="s-experts">
+    <div class="nav">
+      <div class="nav-back" onclick="showFlow()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="nav-ttl">Experts</div>
+      <div class="nav-ph"></div>
+    </div>
+    <div class="experts-inner">
+      <div style="font-size:32px;margin-bottom:18px">&#128270;</div>
+      <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--t1);margin-bottom:8px">Browse experts</div>
+      <div style="font-size:14px;font-weight:300;color:var(--t2);line-height:1.7;margin-bottom:32px">No account needed &#8212; explore 300+ vetted readers.</div>
+      <div class="btn-p" onclick="alert('Expert listing')">See all readers &#8250;</div>
+    </div>
+  </div>
+</div>
+
+<!-- OTP input — at body level, outside all screens -->
+<input style="position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:-100px" id="otp-ri" type="tel" maxlength="6" inputmode="numeric" autocomplete="one-time-code" oninput="otpInput(this.value)"/>
+
+<script>
+var C = document.getElementById('chat');
+var _started = false, _authMethod = 'mobile';
+var _days = [], _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], _years = [];
+(function(){ for(var i=1;i<=31;i++) _days.push(i); for(var y=2010;y>=1950;y--) _years.push(y); })();
+var _di=14, _mi=5, _yi=30;
+
+// Particles
+(function(){
+  var a=document.getElementById('amb');
+  for(var i=0;i<20;i++){
+    var p=document.createElement('div'); p.className='pt';
+    p.style.left=Math.random()*100+'%'; p.style.bottom=Math.random()*35+'%';
+    p.style.width=p.style.height=(Math.random()*2+1)+'px';
+    p.style.animationDuration=(Math.random()*8+6)+'s';
+    p.style.animationDelay=(Math.random()*14)+'s';
+    a.appendChild(p);
+  }
+})();
+
+function mk(t,c){var e=document.createElement(t);if(c)e.className=c;return e;}
+function sc(){setTimeout(function(){C.scrollTop=C.scrollHeight;},80);}
+function vis(el,d){setTimeout(function(){if(el)el.classList.add('vis');},d||30);}
+
+// Screen management — simple opacity toggle, no transforms
+function startReading(){
+  var launch=document.getElementById('s-launch');
+  var flow=document.getElementById('s-flow');
+  // Fade launch out
+  launch.classList.add('off');
+  // Fade flow in
+  flow.classList.add('on');
+  // Show back button
+  var nb=document.getElementById('nav-back');
+  if(nb) nb.style.display='flex';
+  // Start conversation
+  if(!_started){_started=true; setTimeout(startFlow,500);}
+}
+
+function showLaunch(){
+  document.getElementById('s-launch').classList.remove('off');
+  document.getElementById('s-flow').classList.remove('on');
+}
+
+function showExperts(){
+  document.getElementById('s-experts').classList.add('on');
+}
+
+function showFlow(){
+  document.getElementById('s-experts').classList.remove('on');
+}
+
+// Joy message
+function addJoy(html,delay,cb){
+  setTimeout(function(){
+    var t=mk('div','typing');
+    t.innerHTML='<div class="tdots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+    C.appendChild(t); sc(); setTimeout(function(){t.classList.add('vis');},30);
+    setTimeout(function(){
+      t.remove();
+      var b=mk('div','jb');
+      b.innerHTML='<div class="jb-tag">Joy</div><div class="jb-body">'+html+'</div>';
+      C.appendChild(b); sc();
+      setTimeout(function(){b.classList.add('vis'); sc(); if(cb)cb();},30);
+    },1100);
+  },delay||0);
+}
+
+function addPill(txt,cb){
+  var u=mk('div','upill'); u.innerHTML='<div class="up-in">'+txt+'</div>';
+  C.appendChild(u); sc();
+  setTimeout(function(){u.classList.add('vis'); sc(); if(cb)cb();},30);
+}
+
+function addChips(arr){
+  var w=mk('div','chips');
+  arr.forEach(function(chip){
+    var d=mk('div','chip '+(chip.cls||'pri')); d.textContent=chip.label;
+    d.onclick=function(){w.style.pointerEvents='none'; w.style.opacity='.3'; if(chip.fn)chip.fn();};
+    w.appendChild(d);
+  });
+  C.appendChild(w); sc(); vis(w,30);
+}
+
+// DOB drum
+function buildDOBPicker(){
+  var p=mk('div','picker'); p.id='dob-p';
+  p.innerHTML=
+    '<div class="picker-lbl">&#128467; Date of birth</div>'+
+    '<div class="drums">'+buildDrumCol('day',_days,_di)+'<div class="drum-div"></div>'+buildDrumCol('mon',_months,_mi)+'<div class="drum-div"></div>'+buildDrumCol('yr',_years,_yi)+'</div>'+
+    '<div class="drum-lbl-row"><div class="drum-lbl">Day</div><div class="drum-lbl">Month</div><div class="drum-lbl">Year</div></div>';
+  C.appendChild(p); sc(); vis(p,30);
+  setTimeout(function(){
+    ['day','mon','yr'].forEach(function(t){
+      var col=document.getElementById('dc-'+t);
+      if(col) col.onclick=function(){cycleDrum(t);};
+    });
+    setTimeout(function(){
+      addChips([
+        {label:'This is my date',fn:function(){
+          p.style.opacity='.4'; p.style.pointerEvents='none';
+          afterDOB(_days[_di]+' '+_months[_mi]+' '+_years[_yi]);
+        }},
+        {label:'Skip',cls:'skip',fn:function(){p.style.opacity='.25'; p.style.pointerEvents='none'; afterDOB('Skip');}}
+      ]);
+    },400);
+  },200);
+}
+
+function buildDrumCol(type,arr,idx){
+  var items=''; var s=Math.max(0,idx-2),e=Math.min(arr.length-1,idx+2);
+  for(var i=s;i<=e;i++) items+='<div class="drum-item'+(i===idx?' sel':'')+'">'+arr[i]+'</div>';
+  return '<div class="drum-col" id="dc-'+type+'"><div class="drum-inner" id="di-'+type+'">'+items+'</div></div>';
+}
+
+function cycleDrum(type){
+  if(type==='day') _di=(_di+1)%_days.length;
+  else if(type==='mon') _mi=(_mi+1)%_months.length;
+  else _yi=(_yi+1)%_years.length;
+  var arr=type==='day'?_days:type==='mon'?_months:_years;
+  var idx=type==='day'?_di:type==='mon'?_mi:_yi;
+  var inner=document.getElementById('di-'+type); if(!inner) return;
+  inner.innerHTML='';
+  var s=Math.max(0,idx-2),e=Math.min(arr.length-1,idx+2);
+  for(var i=s;i<=e;i++){var d=mk('div','drum-item'+(i===idx?' sel':'')); d.textContent=arr[i]; inner.appendChild(d);}
+}
+
+// Time
+function buildTimePicker(){
+  var tb=mk('div','block');
+  tb.innerHTML='<div class="block-lbl">&#128336; Birth time</div><div class="time-inner"><input class="t-in" id="t-hr" placeholder="HH" maxlength="2" inputmode="numeric"/><div class="t-sep">:</div><input class="t-in" id="t-min" placeholder="MM" maxlength="2" inputmode="numeric"/><div class="t-note">Helps Joy read your exact planetary position</div></div>';
+  C.appendChild(tb); sc(); vis(tb,30);
+  setTimeout(function(){
+    addChips([
+      {label:'That\'s my time',fn:function(){
+        var h=document.getElementById('t-hr').value, m=document.getElementById('t-min').value;
+        tb.style.opacity='.4'; tb.style.pointerEvents='none';
+        afterTime(h&&m?h+':'+m:'I don\'t know');
+      }},
+      {label:'I don\'t know',cls:'skip',fn:function(){tb.style.opacity='.25'; tb.style.pointerEvents='none'; afterTime('I don\'t know');}}
+    ]);
+  },400);
+}
+
+// City
+function buildPlacePicker(){
+  var lb=mk('div','block');
+  var sugs=[{v:'Mumbai, India',m:'Mumbai',s:'Maharashtra, India'},{v:'Delhi, India',m:'Delhi',s:'New Delhi, India'},{v:'Bengaluru, India',m:'Bengaluru',s:'Karnataka, India'},{v:'London, UK',m:'London',s:'England, UK'}];
+  var lhtml='<div class="block-lbl">&#128205; Birth city</div><input class="loc-in" id="loc-in" placeholder="City, country" autocomplete="off"/><div class="loc-sugs" id="loc-sugs">';
+  sugs.forEach(function(s){lhtml+='<div class="loc-s" data-v="'+s.v+'"><div class="loc-sm">'+s.m+'</div><div class="loc-sub">'+s.s+'</div></div>';});
+  lhtml+='</div>';
+  lb.innerHTML=lhtml; C.appendChild(lb); sc(); vis(lb,30);
+  setTimeout(function(){
+    var inp=document.getElementById('loc-in'), sugEl=document.getElementById('loc-sugs');
+    if(!inp||!sugEl) return;
+    inp.oninput=function(){sugEl.classList.toggle('show',inp.value.length>=1);};
+    sugEl.addEventListener('click',function(e){
+      var row=e.target.closest('[data-v]');
+      if(row){inp.value=row.getAttribute('data-v'); sugEl.classList.remove('show'); inp.blur();}
+    });
+    var _origH=window.innerHeight, _kbOpen=false;
+    function onVV(){
+      var vvH=window.visualViewport?window.visualViewport.height:window.innerHeight;
+      if(_origH-vvH>120){
+        if(!_kbOpen){_kbOpen=true; lb.classList.add('city-focus'); sugEl.style.maxHeight=Math.max(80,vvH*.22)+'px';
+          setTimeout(function(){var r=inp.getBoundingClientRect(); var tgt=C.scrollTop+r.bottom-(vvH-80); if(tgt>C.scrollTop)C.scrollTo({top:tgt,behavior:'smooth'});},80);}
+      } else if(_kbOpen){_kbOpen=false; lb.classList.remove('city-focus'); sugEl.style.maxHeight=''; setTimeout(function(){lb.scrollIntoView({behavior:'smooth',block:'nearest'});},100);}
+    }
+    if(window.visualViewport) window.visualViewport.addEventListener('resize',onVV);
+    else window.addEventListener('resize',onVV);
+  },100);
+  var sn=mk('div','skip-note'); sn.innerHTML='Skip any field &#8212; <span>Joy still reads for you</span>';
+  C.appendChild(sn); sc(); vis(sn,200);
+  setTimeout(function(){
+    addChips([
+      {label:'That\'s my city',fn:function(){
+        var v=document.getElementById('loc-in').value;
+        lb.style.opacity='.4'; lb.style.pointerEvents='none'; sn.style.opacity='.25';
+        afterPlace(v||'City added');
+      }},
+      {label:'Skip',cls:'skip',fn:function(){lb.style.opacity='.25'; lb.style.pointerEvents='none'; sn.style.opacity='.25'; afterPlace('Skip');}}
+    ]);
+  },400);
+}
+
+// Auth
+function buildAuth(){
+  var ao=mk('div','auth-opts');
+  var rm=mk('div','auth-row');
+  rm.innerHTML='<div class="auth-ico">&#128241;</div><div style="flex:1"><div class="auth-nm">Mobile number</div><div class="auth-sub">We will send a 6-digit code</div></div><div class="auth-arr">&#8250;</div>';
+  rm.onclick=function(){_authMethod='mobile'; ao.style.pointerEvents='none'; ao.style.opacity='.3'; addPill('Mobile number',buildPhoneInput);};
+  var re=mk('div','auth-row');
+  re.innerHTML='<div class="auth-ico">&#9993;&#65039;</div><div style="flex:1"><div class="auth-nm">Email address</div><div class="auth-sub">We will send a 6-digit code</div></div><div class="auth-arr">&#8250;</div>';
+  re.onclick=function(){_authMethod='email'; ao.style.pointerEvents='none'; ao.style.opacity='.3'; addPill('Email address',buildEmailInput);};
+  var rn=mk('div','auth-row ghost');
+  rn.innerHTML='<div style="flex:1"><div class="auth-nm">Not right now</div></div><div class="auth-arr" style="color:var(--t3);font-size:18px">&#8250;</div>';
+  rn.onclick=function(){ao.style.pointerEvents='none'; ao.style.opacity='.3'; addPill('Not right now',showExperts);};
+  ao.appendChild(rm); ao.appendChild(re); ao.appendChild(rn);
+  C.appendChild(ao); sc(); vis(ao,30);
+}
+
+// Phone
+function buildPhoneInput(){
+  var pb=mk('div','block');
+  pb.innerHTML='<div class="ph-lbl">&#128241; Mobile number</div><div class="ph-row"><div class="cc">&#127470;&#127475; +91</div><input class="ph-in" id="ph-in" placeholder="98765 43210" inputmode="tel" maxlength="10"/></div><div class="ph-change" id="ph-chg">Change number</div>';
+  C.appendChild(pb); sc(); vis(pb,30);
+  setTimeout(function(){
+    var inp=document.getElementById('ph-in'), chg=document.getElementById('ph-chg');
+    if(!inp) return;
+    inp.oninput=function(){
+      var v=inp.value.replace(/[^0-9]/g,'');
+      if(v.length>0 && chg) chg.style.display='block';
+      if(v.length===10){
+        inp.blur(); pb.style.pointerEvents='none'; inp.style.opacity='.5';
+        if(chg){chg.style.opacity='.5'; chg.style.pointerEvents='none';}
+        addPill('+91 '+v.slice(0,5)+' '+v.slice(5),function(){
+          addJoy('Sending code&#8230;',200,function(){setTimeout(function(){buildOTP('mobile');},600);});
+        });
+      }
+    };
+    if(chg) chg.onclick=function(){inp.value=''; inp.style.opacity='1'; chg.style.display='none'; pb.style.pointerEvents='auto'; inp.focus();};
+    setTimeout(function(){inp.focus();},200);
+  },200);
+}
+
+// Email
+function buildEmailInput(){
+  var eb=mk('div','block');
+  eb.innerHTML='<div class="ph-lbl">&#9993;&#65039; Email address</div><input class="em-in" id="em-in" placeholder="you@example.com" inputmode="email" style="width:calc(100% - 32px);margin:0 16px 0"/><div class="ph-change" id="em-chg">Change email</div>';
+  C.appendChild(eb); sc(); vis(eb,30);
+  setTimeout(function(){
+    var inp=document.getElementById('em-in'), chg=document.getElementById('em-chg');
+    if(!inp) return;
+    function valid(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
+    inp.oninput=function(){if(inp.value.length>4 && chg) chg.style.display='block';};
+    inp.onblur=function(){
+      if(!valid(inp.value)) return;
+      eb.style.pointerEvents='none'; inp.style.opacity='.5';
+      if(chg){chg.style.opacity='.5'; chg.style.pointerEvents='none';}
+      addPill(inp.value,function(){
+        addJoy('Sending code&#8230;',200,function(){setTimeout(function(){buildOTP('email');},600);});
+      });
+    };
+    if(chg) chg.onclick=function(){inp.value=''; inp.style.opacity='1'; chg.style.display='none'; eb.style.pointerEvents='auto'; inp.focus();};
+    setTimeout(function(){inp.focus();},200);
+  },200);
+}
+
+// OTP
+function buildOTP(method){
+  var dest=method==='mobile'?'+91 98765 43210':'your email';
+  addJoy('Code sent to <em>'+dest+'</em>. Enter it below.',400,function(){
+    setTimeout(function(){
+      var ow=mk('div','otp-wrap'), boxes=mk('div','otp-boxes');
+      for(var i=0;i<6;i++){var b=mk('div','ob'+(i===0?' act':'')); b.id='ob'+i; boxes.appendChild(b);}
+      var rs=mk('div','otp-resend');
+      rs.innerHTML='Didn\'t get it? <span id="rsnd">Resend</span>';
+      ow.appendChild(boxes); ow.appendChild(rs);
+      C.appendChild(ow); sc(); vis(ow,30);
+      setTimeout(function(){
+        var rb=document.getElementById('rsnd'); if(rb) rb.onclick=function(){alert('Resent!');};
+        var ri=document.getElementById('otp-ri'); if(ri) ri.focus();
+      },400);
+    },300);
+  });
+}
+
+function otpInput(v){
+  var clean=v.replace(/[^0-9]/g,'').slice(0,6);
+  document.getElementById('otp-ri').value=clean;
+  for(var i=0;i<6;i++){
+    var b=document.getElementById('ob'+i); if(!b) continue;
+    b.textContent=clean[i]||'';
+    b.className='ob'+(i<clean.length?' fil':(i===clean.length&&i<6?' act':''));
+  }
+  if(clean.length===6){
+    var ri=document.getElementById('otp-ri'); if(ri) ri.blur();
+    setTimeout(function(){
+      addPill('\u2022\u2022\u2022\u2022\u2022\u2022', function(){
+        addJoy('You\u2019re in. What would you like to do today?', 300, function(){
+          setTimeout(buildChoice, 400);
+        });
+      });
+    }, 300);
+  }
+}
+
+// Choice — inline in chat, no screen change
+function buildChoice(){
+  var w=mk('div','choice-cards');
+  [{ico:'&#127183;',nm:'Daily card',desc:'One card drawn for where you are right now',badge:'Free',cls:'daily'},
+   {ico:'&#10022;',nm:'Full reading',desc:'Deep dive into what you are carrying &#8212; with Joy and your birth chart',badge:'Free to start',cls:'full'},
+   {ico:'&#128101;',nm:'Talk to an expert now',desc:'300+ readers available',badge:null,cls:'expert'}
+  ].forEach(function(card){
+    var d=mk('div','ccard '+card.cls);
+    d.innerHTML=
+      '<div class="ccard-ico">'+card.ico+'</div>'+
+      '<div style="flex:1"><div class="ccard-nm">'+card.nm+'</div><div class="ccard-desc">'+card.desc+'</div>'+(card.badge?'<div class="ccard-badge '+card.cls+'">'+card.badge+'</div>':'')+'</div>'+
+      '<div style="font-size:20px;color:var(--t3);flex-shrink:0">&#8250;</div>';
+    d.onclick=function(){
+      w.style.pointerEvents='none'; w.style.opacity='.35';
+      if(card.cls==='expert'){
+        addPill(card.nm,function(){addJoy('Connecting you to our readers &#8212; <em>300+ vetted experts</em> available now.',400,null);});
+      } else {
+        addPill(card.nm,function(){
+          addJoy('How would you like your reading?',400,function(){
+            setTimeout(function(){buildModality(card.nm);},300);
+          });
+        });
+      }
+    };
+    w.appendChild(d);
+  });
+  C.appendChild(w); sc(); vis(w,30);
+}
+
+function buildModality(readingType){
+  var w=mk('div','modality-cards');
+  [{ico:'&#127183;',nm:'Tarot',desc:'Cards drawn from your energy right now',cls:'tarot'},
+   {ico:'&#10022;',nm:'Astrology',desc:'Reading built from your birth chart and the sky today',cls:'astro'}
+  ].forEach(function(mod){
+    var d=mk('div','mcard '+mod.cls);
+    d.innerHTML=
+      '<div class="mcard-ico">'+mod.ico+'</div>'+
+      '<div style="flex:1"><div class="mcard-nm">'+mod.nm+'</div><div class="mcard-desc">'+mod.desc+'</div></div>'+
+      '<div style="font-size:20px;color:var(--t3);flex-shrink:0">&#8250;</div>';
+    d.onclick=function(){
+      w.style.pointerEvents='none'; w.style.opacity='.35';
+      addPill(mod.nm,function(){
+        addJoy('Your <em>'+mod.nm+'</em> reading begins.',400,null);
+      });
+    };
+    w.appendChild(d);
+  });
+  C.appendChild(w); sc(); vis(w,30);
+}
+
+// Flow steps
+function startFlow(){
+  addJoy('Quick and secure &#8212; under 20 seconds. The more I know, the more your cards speak directly to you.',0,function(){
+    setTimeout(buildDOBPicker,300);
+  });
+}
+
+function afterDOB(label){
+  addPill(label,function(){
+    addJoy('Birth time helps Joy read your exact planetary position. Do you know it?',400,function(){
+      setTimeout(buildTimePicker,300);
+    });
+  });
+}
+
+function afterTime(label){
+  addPill(label,function(){
+    addJoy('And your birth city? Even just the country helps.',400,function(){
+      setTimeout(buildPlacePicker,300);
+    });
+  });
+}
+
+function afterPlace(label){
+  addPill(label,function(){
+    var note=mk('div','profile-note');
+    note.innerHTML='&#128274; You can update any of these in your profile at any time.';
+    C.appendChild(note); sc(); vis(note,30);
+    setTimeout(function(){
+      addJoy('Last thing &#8212; so I can save your reading and come back to it. How would you like to continue?',500,function(){
+        setTimeout(buildAuth,300);
+      });
+    },600);
+  });
+}
+</script>
+<script>
+window.addEventListener('load', function() {
+  document.getElementById('s-launch').classList.add('off');
+  var flow = document.getElementById('s-flow');
+  flow.classList.add('on');
+  var nb = document.getElementById('nav-back');
+  if(nb) nb.style.display='flex';
+  _started = true;
+  setTimeout(function() {
+    addJoy("You’re in. What would you like to do today?", 0, function() {
+      setTimeout(buildChoice, 400);
+    });
+  }, 400);
+});
+</script>
+</body>
+</html>
